@@ -1,0 +1,58 @@
+@charset "UTF-8";
+#mainTable {
+    font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: small;
+    border-collapse: collapse;
+    width: 100%;
+    box-sizing: inherit;
+}
+
+#mainTable td {
+    border: 1px solid #ddd;
+    padding: 1px;
+}
+
+#mainTable tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+#mainTable td:hover {
+    background-color: #ddd;
+}
+
+#mainTable th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #4CAF50;
+    color: white;
+}
+
+.correct {
+    border-bottom: 2px solid green;
+    background-image: url('img/ok-icon.png');
+    background-position: right;
+    background-size: 15px;
+    background-repeat: no-repeat;
+}
+
+.error {
+    border-bottom: 2px solid red;
+    background-image: url('img/error-icon.png');
+    background-position: right;
+    background-size: 15px;
+    background-repeat: no-repeat;
+}
+
+p{
+    margin: 0px;
+}
+
+#mainHeader{
+    text-align: center;
+}
+
+#headerTable{
+    width: 100%;
+}
