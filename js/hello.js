@@ -8,11 +8,6 @@ const HTTP_OK_CODE = 200;
 const HTTP_CREATED_CODE = 201;
 const HTTP_NOT_FOUND = 404;
 
-const GET = "GET";
-const PUT = "PUT";
-const POST = "POST";
-const DELETE = "DELETE";
-
 function processContent(obj) {
 	return toString(obj);
 }
@@ -41,42 +36,69 @@ function showLoader(show) {
 	}
 }
 
-function getSelectedValueFromSelect(selectElement){
-	if((selectElement instanceof HTMLSelectElement) === false)
+function getSelectedValueFromSelect(selectElement) {
+	if ((selectElement instanceof HTMLSelectElement) === false)
 		throw new Error("Passed argument is not <select/> element");
 	return selectElement.value;
 }
 
-function getSelectedTextFromSelect(selectElement){
-	if((selectElement instanceof HTMLSelectElement) === false)
+function getSelectedTextFromSelect(selectElement) {
+	if ((selectElement instanceof HTMLSelectElement) === false)
 		throw new Error("Passed argument is not <select/> element");
 	return selectElement.options[selectElement.selectedIndex].innerText;
 }
 
-//R-Receive-findAll,findById
+function clearNode(oldNode, nodeName) {
+	let newNode = document.createElement(nodeName);
+	newNode.setAttribute("id", oldNode.id);
+	oldNode.parentNode.replaceChild(newNode, oldNode);
+	return document.getElementById(oldNode.id);
+}
+
+
+let mainTableHeader = document.getElementById("mainTableHeader");
+let mainTableBody = document.getElementById("mainTableBody");
+//R-Receive-findAll
 function findAll() {
-	if (getSelectedValueFromSelect(tableCBox) !== "") { //if table selected
-		// recordSB = { id: "*" };
+	let currentValue = getSelectedValueFromSelect(tableCBox);
+	if (currentValue !== "") { //if table selected
 		undoSave();
 		showLoader(true);
-		httpRequestTemplate(GET, getSelectedValueFromSelect(tableCBox), "",
+		httpRequestTemplate("get", currentValue, "",
 			function (response) {
 				showLoader(false);
-				if (response._embedded[getSelectedTextFromSelect(tableCBox)].length > 0) {
-					virtualTab = new VirtualTable(response, false);
-					forRange(virtualTab.foreignColumns.length, i => {
-						showLoader(true);
-						httpRequestTemplate(GET, virtualTab.foreignColumns[i]
-							, "", function (response) {
-								showLoader(false);
-								virtualTab.addForeignRecordsForColumn(response, i);
-							}, function (error) {
-								showLoader(false);
-								printErrorFromServer(error);
+				let selectedTableName = getSelectedTextFromSelect(tableCBox);
+
+				console.log(response);
+
+				let records = response._embedded[selectedTableName];
+				if (records.length > 0) { //
+
+					mainTableHeader = clearNode(mainTableHeader, "thead");
+					mainTableBody = clearNode(mainTableBody, "tbody");
+
+					for (let i = 0; i < records.length; i++) {
+						let row = document.createElement("tr");
+						Object.keys(records[i])
+							.filter(propertyName => propertyName !== "print")
+							.forEach(propertyName => {
+								//add column name cell
+								if (i == 0 && propertyName !== "_links") {
+									let columnNameCell = document.createElement("td");
+									columnNameCell.innerText = propertyName;
+									mainTableHeader.appendChild(columnNameCell);
+								}
+
+								let cell = document.createElement("td");
+								if (propertyName !== "_links") {
+									cell.innerText = (typeof (records[i][propertyName]) === "object") ? records[i][propertyName].print : records[i][propertyName];
+									row.appendChild(cell);
+								}
 							});
-					});
+						mainTableBody.appendChild(row);
+					}
 				} else {
-					alert("Table " + getSelectedTextFromSelect(tableCBox) + " is empty!");
+					alert(`Table ${selectedTableName} is empty!`);
 				}
 			}, function (error) {
 				showLoader(false);
@@ -85,37 +107,43 @@ function findAll() {
 	}
 }
 
-let idInputStyle = "error";
-function idFieldChanged() { idInputStyle = (id > 0) ? "correct" : "error"; }
+let idInputField = document.getElementById("idInputField");
+function idFieldChanged() { idInputField.className = ((parseInt(idInputField.value) > 0) ? "correct" : "error"); }
+
 function findById() {
-	if (tableCBox != tables[0] && idInputStyle == "correct") {
+	let currentValue = getSelectedValueFromSelect(tableCBox);
+	if (currentValue !== "" && idInputField.className === "correct") {
 		showLoader(true);
-		httpRequestTemplate(GET, mainURL + tableCBox.value + "/" + id, "",
+		httpRequestTemplate("get", `${currentValue}/${idInputField.value}`, "",
 			function (response) {
-				// console.log(response.data);
 				showLoader(false);
-				if (response.status != HTTP_NOT_FOUND) {
-					virtualTab = new VirtualTable(response, true);
-					forRange(virtualTab.foreignColumns.length, i => {
-						showLoader(true);
-						httpRequestTemplate(GET, mainURL + virtualTab.foreignColumns[i]
-							, "", function (response) {
-								showLoader(false);
-								virtualTab.addForeignRecordsForColumn(response, i);
-							}, function (error) {
-								showLoader(false);
-								printErrorFromServer(error);
-							});
+
+				mainTableHeader = clearNode(mainTableHeader, "thead");
+				mainTableBody = clearNode(mainTableBody, "tbody");
+
+				console.log(response);
+
+				let row = document.createElement("tr");
+				Object.keys(response)
+					.filter(name => name !== "_links" && name !== "print")
+					.forEach(name => {
+						let columnCell = document.createElement("td");
+						columnCell.innerText = name;
+						mainTableHeader.appendChild(columnCell);
+
+						let cell = document.createElement("td");
+						cell.innerText = (typeof (response[name]) === "object") ? response[name].print : response[name];
+						row.appendChild(cell);
 					});
-				}
+				mainTableBody.appendChild(row);
 			}, function (error) {
 				showLoader(false);
 				printErrorFromServer(error);
 			});
-	} else if (tableCBox == tables[0]) {
+	} else if (currentValue === "") {
 		alert("Table was't chosen!");
-	} else if (id < 1 || id == undefined) {
-		alert("Id value must be greater than 0, but is " + id + "!");
+	} else if (idInputField.className === "error" || idInputField.className === undefined) {
+		alert(`Id value must be greater than 0, but is ${idInputField.value}!`);
 	}
 }
 
@@ -130,7 +158,7 @@ function update() {
 		virtualTab.setUpdatedCellValue(newValue);
 		const updatedRecord = virtualTab.getUpdatedRecord();
 		showLoader(true);
-		httpRequestTemplate(PUT,
+		httpRequestTemplate("put",
 			mainURL + tableCBox.value + "/" + updatedRecord["id"], updatedRecord
 			, function (response) {
 				// console.log(response);
@@ -210,7 +238,7 @@ function save() {
 	// console.log(recordToSave);
 
 	showLoader(true);
-	httpRequestTemplate(POST, mainURL + tableCBox.value, recordToSave
+	httpRequestTemplate("post", mainURL + tableCBox.value, recordToSave
 		, function (response) {
 			// console.log(response);
 			showLoader(false);
@@ -237,7 +265,7 @@ function undoSave() {
 function deleteById() {
 	if (tableCBox != tables[0] && idInputStyle == "correct") {
 		showLoader(true);
-		httpRequestTemplate(DELETE, mainURL + tableCBox.value + "/" + id, "",
+		httpRequestTemplate("delete", mainURL + tableCBox.value + "/" + id, "",
 			function (response) {
 				if (response.status == HTTP_OK_CODE) {
 					showLoader(false);

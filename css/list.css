@@ -21,7 +21,7 @@
     background-color: #ddd;
 }
 
-#mainTable th {
+#mainTable thead {
     padding-top: 12px;
     padding-bottom: 12px;
     text-align: left;
@@ -32,7 +32,7 @@
 .correct {
     border-bottom: 2px solid green;
     background-image: url('img/ok-icon.png');
-    background-position: right;
+    background-position: 85%;
     background-size: 15px;
     background-repeat: no-repeat;
 }
@@ -40,7 +40,7 @@
 .error {
     border-bottom: 2px solid red;
     background-image: url('img/error-icon.png');
-    background-position: right;
+    background-position: 85%;
     background-size: 15px;
     background-repeat: no-repeat;
 }

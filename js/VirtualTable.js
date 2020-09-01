@@ -2,13 +2,13 @@
  * This class represents virtual table.
  */
 class VirtualTable {
-	constructor(response, findById) {
+	constructor(response,selectedTableName, findById) {
 		this.foreignColumns = [];
 		this.foreignRecordsForEachForeignColumn = [];
 
 		console.log(response);
 
-		if (Array.isArray(response.data)
+		if (Array.isArray(response)
 			&& response.data.length > 0 && typeof response.data[0] == 'string') {
 			this.records = [];
 			this.columns = [];

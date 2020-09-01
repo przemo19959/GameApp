@@ -36,16 +36,12 @@
     </table>
     <table>
         <tr>
+            <td><select id="tableCBox" title="Choose table to show." onchange="findAll()"></select></td>
             <td>
-                <select id="tableCBox" title="Choose table to show." onchange="findAll()"></select>
+                <input id="idInputField" class="error" type="number" placeholder="type id of record"
+                    onchange="idFieldChanged()" title="Type id of record which you want to show or delete.">
             </td>
-            <td>
-                <input class="{{idInputStyle}}" type="number" placeholder="type id of record" ng-model="id"
-                    ng-change="idFieldChanged()" title="Type id of record which you want to show or delete.">
-            </td>
-            <td>
-                <button ng-click="findById()" title="Click to find record with given id.">findById</button>
-            </td>
+            <td><button title="Click to find record with given id." onclick="findById()">findById</button></td>
             <td>
                 <button ng-click="deleteById()" title="Click to delete record with given id.">deleteById</button>
             </td>
@@ -56,10 +52,9 @@
     </table>
 
     <table id="mainTable">
-        <tr id="columnNamesRow">
-            <th ng-repeat="header in virtualTab.columns">{{header}}</th>
-        </tr>
-        <tr ng-repeat="record in virtualTab.records">
+        <thead id="mainTableHeader"></thead>
+        <tbody id="mainTableBody"></tbody>
+        <!-- <tr ng-repeat="record in virtualTab.records">
             <td ng-repeat="column in virtualTab.columns">
                 <p ng-model="paragraphValue" ng-click="virtualTab.setTableValue(record,column,true)"
                     ng-if="virtualTab.getTableValue(record,column)==false">
@@ -82,9 +77,9 @@
                     </tr>
                 </table>
             </td>
-        </tr>
+        </tr> -->
 
-        <tr ng-if="virtualTab.isNewRecordAdded()">
+        <!-- <tr ng-if="virtualTab.isNewRecordAdded()">
             <td ng-repeat="column in virtualTab.columns">
                 <p ng-if="virtualTab.isIdColumn(column)">*</p>
                 <input ng-model="recordSB[column]" class="{{recordSBStyle[$index]}}"
@@ -102,7 +97,7 @@
                 <button ng-click="undoSave()" title="Click to undo save operation.">Undo</button>
                 <button ng-click="save()" title="Click to save new record in database.">Save Record in DB</button>
             </td>
-        </tr>
+        </tr> -->
     </table>
 
     <script src='/js/main.js'></script>

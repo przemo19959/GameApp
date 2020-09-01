@@ -23,6 +23,7 @@ function initTableCBox(data){
     let tableCbox=document.getElementById("tableCBox");
     let option=document.createElement("option");
     option.innerText="-- choose table --";
+    option.value="";
     tableCbox.appendChild(option);
 
     let linkNames=Object.keys(data._links).filter(e=>e !== "profile");
