@@ -328,6 +328,6 @@ const getFormatedDateIfDateObject = function (value) {
 }
 
 const printErrorFromServer = function (error) {
-	alert(error.data.errorMessage + "\n\t" + error.data.solutions);
+	alert(error.exceptionName + ": " + error.message+"\n\n"+error.solutions.join("\n=>"));
 }
 const printResponseFromServer = function (response) { alert(response.data.message); }
