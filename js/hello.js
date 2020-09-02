@@ -55,95 +55,97 @@ function clearNode(oldNode, nodeName) {
 	return document.getElementById(oldNode.id);
 }
 
-
 let mainTableHeader = document.getElementById("mainTableHeader");
 let mainTableBody = document.getElementById("mainTableBody");
 //R-Receive-findAll
 function findAll() {
 	let currentValue = getSelectedValueFromSelect(tableCBox);
-	if (currentValue !== "") { //if table selected
-		undoSave();
+	let selectedTableName = getSelectedTextFromSelect(tableCBox);
+	findTemplate(currentValue !== "",
+		(response) => response._embedded[selectedTableName],
+		currentValue,
+		() => alert(`Table ${selectedTableName} is empty!`));
+}
+
+function findTemplate(currentValueTest, extractRecordsFromResponse, requestURL, noRecordsCallback = function () { }, incorrectCurrentValueCallback = function () { }) {
+	if (currentValueTest) { //if selected value is correct
 		showLoader(true);
-		httpRequestTemplate("get", currentValue, "",
-			function (response) {
+		new HttpRequestTemplate()//
+			.setSuccessCallback((response) => {
 				showLoader(false);
-				let selectedTableName = getSelectedTextFromSelect(tableCBox);
-
-				console.log(response);
-
-				let records = response._embedded[selectedTableName];
+				let records = extractRecordsFromResponse(response);
+				console.log(records);
 				if (records.length > 0) { //
-
 					mainTableHeader = clearNode(mainTableHeader, "thead");
 					mainTableBody = clearNode(mainTableBody, "tbody");
-
 					for (let i = 0; i < records.length; i++) {
 						let row = document.createElement("tr");
 						Object.keys(records[i])
-							.filter(propertyName => propertyName !== "print")
+							.filter(propertyName => propertyName !== "_links" && propertyName !== "print")
 							.forEach(propertyName => {
 								//add column name cell
-								if (i == 0 && propertyName !== "_links") {
+								if (i == 0) {
 									let columnNameCell = document.createElement("td");
 									columnNameCell.innerText = propertyName;
 									mainTableHeader.appendChild(columnNameCell);
 								}
 
 								let cell = document.createElement("td");
-								if (propertyName !== "_links") {
-									cell.innerText = (typeof (records[i][propertyName]) === "object") ? records[i][propertyName].print : records[i][propertyName];
-									row.appendChild(cell);
-								}
+								cell.innerText = (typeof (records[i][propertyName]) === "object") ? records[i][propertyName].print : records[i][propertyName];
+								row.appendChild(cell);
 							});
 						mainTableBody.appendChild(row);
 					}
 				} else {
-					alert(`Table ${selectedTableName} is empty!`);
+					noRecordsCallback();
 				}
-			}, function (error) {
-				showLoader(false);
-				printErrorFromServer(error);
-			});
+			}).execute(requestURL);
+	} else {
+		incorrectCurrentValueCallback();
 	}
 }
 
 let idInputField = document.getElementById("idInputField");
 function idFieldChanged() { idInputField.className = ((parseInt(idInputField.value) > 0) ? "correct" : "error"); }
 
+//todo: dokończyć z pomocą findTemplate
 function findById() {
 	let currentValue = getSelectedValueFromSelect(tableCBox);
 	if (currentValue !== "" && idInputField.className === "correct") {
 		showLoader(true);
-		httpRequestTemplate("get", `${currentValue}/${idInputField.value}`, "",
-			function (response) {
+		new HttpRequestTemplate()//
+			.setSuccessCallback((response) => {
 				showLoader(false);
 
 				mainTableHeader = clearNode(mainTableHeader, "thead");
 				mainTableBody = clearNode(mainTableBody, "tbody");
+				let records = [];
+				records.push(response);
+				for (let i = 0; i < records.length; i++) {
+					let row = document.createElement("tr");
+					Object.keys(records[i])
+						.filter(propertyName => propertyName !== "_links" && propertyName !== "print")
+						.forEach(propertyName => {
+							let columnCell = document.createElement("td");
+							columnCell.innerText = propertyName;
+							mainTableHeader.appendChild(columnCell);
 
-				console.log(response);
-
-				let row = document.createElement("tr");
-				Object.keys(response)
-					.filter(name => name !== "_links" && name !== "print")
-					.forEach(name => {
-						let columnCell = document.createElement("td");
-						columnCell.innerText = name;
-						mainTableHeader.appendChild(columnCell);
-
-						let cell = document.createElement("td");
-						cell.innerText = (typeof (response[name]) === "object") ? response[name].print : response[name];
-						row.appendChild(cell);
-					});
-				mainTableBody.appendChild(row);
-			}, function (error) {
-				showLoader(false);
-				printErrorFromServer(error);
-			});
+							let cell = document.createElement("td");
+							cell.innerText = (typeof (records[i][propertyName]) === "object") ? records[i][propertyName].print : records[i][propertyName];
+							row.appendChild(cell);
+						});
+					mainTableBody.appendChild(row);
+				}
+			})//
+			.execute(`${currentValue}/${idInputField.value}`);
 	} else if (currentValue === "") {
 		alert("Table was't chosen!");
-	} else if (idInputField.className === "error" || idInputField.className === undefined) {
-		alert(`Id value must be greater than 0, but is ${idInputField.value}!`);
+	} else if (idInputField.className === "error") {
+		if (idInputField.value !== "") {
+			alert(`Id value must be greater than 0, but is ${idInputField.value}!`);
+		} else {
+			alert("Id field is empty, enter id value!");
+		}
 	}
 }
 
@@ -284,7 +286,9 @@ function deleteById() {
 	}
 }
 
-const httpRequestTemplate = function (methodType, requestURL, requestBody, successCallback, errorCallback) {
+const httpRequestTemplate = function (methodType = "get", requestURL, requestBody = "",//
+	successCallback = printResponseFromServer,//
+	errorCallback = printErrorFromServer) {
 	let xhr = new XMLHttpRequest();
 	xhr.open(methodType, requestURL, true);
 	xhr.onreadystatechange = function () {
@@ -327,7 +331,6 @@ const getFormatedDateIfDateObject = function (value) {
 	return value;
 }
 
-const printErrorFromServer = function (error) {
-	alert(error.exceptionName + ": " + error.message+"\n\n"+error.solutions.join("\n=>"));
-}
-const printResponseFromServer = function (response) { alert(response.data.message); }
+
+const printErrorFromServer = function (error) { alert(error.exceptionName + ": " + error.message + "\n\n" + error.solutions.join("\n=>")); }
+const printResponseFromServer = function (response) { console.log(response); }
