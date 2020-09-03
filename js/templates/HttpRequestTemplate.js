@@ -18,6 +18,7 @@ class HttpRequestTemplate {
     execute(requestURL) {
         let xhr = new XMLHttpRequest();
         xhr.open(this.methodType, requestURL, true);
+        xhr.setRequestHeader("content-type","application/json");
         xhr.onreadystatechange = () => {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 let status = xhr.status;

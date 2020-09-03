@@ -57,6 +57,16 @@ function clearNode(oldNode, nodeName) {
 
 let mainTableHeader = document.getElementById("mainTableHeader");
 let mainTableBody = document.getElementById("mainTableBody");
+let mainTable = document.getElementById("mainTable");
+
+mainTable.addEventListener("mouseleave", () => { hideUpdateBoxAndSetOriginalValue(originalValue); });
+function hideUpdateBoxAndSetOriginalValue(originalValue) {
+	let tmp = document.getElementById("updateTable");
+	if (tmp !== null) {
+		tmp.parentNode.innerText = originalValue;
+	}
+}
+
 //R-Receive-findAll
 function findAll() {
 	let currentValue = getSelectedValueFromSelect(tableCBox);
@@ -67,14 +77,13 @@ function findAll() {
 		() => alert(`Table ${selectedTableName} is empty!`));
 }
 
-function findTemplate(currentValueTest, extractRecordsFromResponse, requestURL, noRecordsCallback = function () { }, incorrectCurrentValueCallback = function () { }) {
-	if (currentValueTest) { //if selected value is correct
+function findTemplate(initialTest, extractRecordsFromResponse, requestURL, noRecordsCallback = () => { }, incorrectCurrentValueCallback = () => { }) {
+	if (initialTest) { //if selected value is correct
 		showLoader(true);
 		new HttpRequestTemplate()//
 			.setSuccessCallback((response) => {
 				showLoader(false);
 				let records = extractRecordsFromResponse(response);
-				console.log(records);
 				if (records.length > 0) { //
 					mainTableHeader = clearNode(mainTableHeader, "thead");
 					mainTableBody = clearNode(mainTableBody, "tbody");
@@ -83,16 +92,9 @@ function findTemplate(currentValueTest, extractRecordsFromResponse, requestURL, 
 						Object.keys(records[i])
 							.filter(propertyName => propertyName !== "_links" && propertyName !== "print")
 							.forEach(propertyName => {
-								//add column name cell
-								if (i == 0) {
-									let columnNameCell = document.createElement("td");
-									columnNameCell.innerText = propertyName;
-									mainTableHeader.appendChild(columnNameCell);
-								}
-
-								let cell = document.createElement("td");
-								cell.innerText = (typeof (records[i][propertyName]) === "object") ? records[i][propertyName].print : records[i][propertyName];
-								row.appendChild(cell);
+								if (i == 0)
+									mainTableHeader.appendChild(createColumnNameCellInHTMLTable(propertyName));
+								row.appendChild(createColumnDataCellInHTMLTable(records, i, propertyName));
 							});
 						mainTableBody.appendChild(row);
 					}
@@ -103,6 +105,66 @@ function findTemplate(currentValueTest, extractRecordsFromResponse, requestURL, 
 	} else {
 		incorrectCurrentValueCallback();
 	}
+}
+
+let originalValue;
+function createColumnDataCellInHTMLTable(records, i, propertyName) {
+	let dataCell = document.createElement("td");
+	dataCell.innerText = (typeof (records[i][propertyName]) === "object") ? records[i][propertyName].print : records[i][propertyName];
+
+	if (propertyName !== "id") { //leave id column - db asigns automatically values, no need to update
+		dataCell.addEventListener("mouseenter", () => {
+			hideUpdateBoxAndSetOriginalValue(originalValue); //must be before new originalValue is set
+			originalValue = dataCell.innerText;
+
+			let miniTable = document.createElement("table");
+			miniTable.id = "updateTable";
+
+			let updateInput = document.createElement("input");
+			updateInput.value = dataCell.innerText;
+			let row1 = document.createElement("tr");
+			row1.appendChild(updateInput);
+			miniTable.appendChild(row1);
+
+
+			let updateButton = document.createElement("button");
+			updateButton.innerText = "Update";
+			updateButton.addEventListener("click", () => {
+				if (updateInput.value !== originalValue) {
+					records[i][propertyName] = updateInput.value;
+
+					console.log(JSON.stringify(records[i]));
+					new HttpRequestTemplate()//
+						.setMethodType("put")//
+						.setRequestBody(JSON.stringify(records[i]))//
+						.setSuccessCallback((response) => {
+							dataCell.innerText = updateInput.value;
+						})//
+						.execute(records[i]._links.self.href);
+				} else {
+					alert("Value is the same, change value to update!");
+				}
+			});
+			let undoButton = document.createElement("button");
+			undoButton.innerText = "Undo";
+			undoButton.addEventListener("click", () => { dataCell.innerText = originalValue; });
+
+			let row2 = document.createElement("tr");
+			row2.appendChild(updateButton);
+			row2.appendChild(undoButton);
+			miniTable.appendChild(row2);
+
+			dataCell.innerText = "";
+			dataCell.appendChild(miniTable);
+		});
+	}
+	return dataCell;
+}
+
+function createColumnNameCellInHTMLTable(propertyName) {
+	let columnNameCell = document.createElement("td");
+	columnNameCell.innerText = propertyName;
+	return columnNameCell;
 }
 
 let idInputField = document.getElementById("idInputField");
@@ -264,23 +326,23 @@ function deleteById() {
 	}
 }
 
-const httpRequestTemplate = function (methodType = "get", requestURL, requestBody = "",//
-	successCallback = printResponseFromServer,//
-	errorCallback = printErrorFromServer) {
-	let xhr = new XMLHttpRequest();
-	xhr.open(methodType, requestURL, true);
-	xhr.onreadystatechange = function () {
-		if (xhr.readyState === XMLHttpRequest.DONE) {
-			var status = xhr.status;
-			if (status === 0 || (status >= 200 && status < 400)) {
-				successCallback(JSON.parse(xhr.responseText));
-			} else {
-				errorCallback(JSON.parse(xhr.responseText));
-			}
-		}
-	};
-	xhr.send(requestBody);
-}
+// const httpRequestTemplate = function (methodType = "get", requestURL, requestBody = "",//
+// 	successCallback = printResponseFromServer,//
+// 	errorCallback = printErrorFromServer) {
+// 	let xhr = new XMLHttpRequest();
+// 	xhr.open(methodType, requestURL, true);
+// 	xhr.onreadystatechange = function () {
+// 		if (xhr.readyState === XMLHttpRequest.DONE) {
+// 			var status = xhr.status;
+// 			if (status === 0 || (status >= 200 && status < 400)) {
+// 				successCallback(JSON.parse(xhr.responseText));
+// 			} else {
+// 				errorCallback(JSON.parse(xhr.responseText));
+// 			}
+// 		}
+// 	};
+// 	xhr.send(requestBody);
+// }
 
 const isErrorStyleInArray = function (stylesArray) {
 	var result = false;
