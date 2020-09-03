@@ -108,45 +108,23 @@ function findTemplate(currentValueTest, extractRecordsFromResponse, requestURL, 
 let idInputField = document.getElementById("idInputField");
 function idFieldChanged() { idInputField.className = ((parseInt(idInputField.value) > 0) ? "correct" : "error"); }
 
-//todo: dokończyć z pomocą findTemplate
 function findById() {
 	let currentValue = getSelectedValueFromSelect(tableCBox);
-	if (currentValue !== "" && idInputField.className === "correct") {
-		showLoader(true);
-		new HttpRequestTemplate()//
-			.setSuccessCallback((response) => {
-				showLoader(false);
-
-				mainTableHeader = clearNode(mainTableHeader, "thead");
-				mainTableBody = clearNode(mainTableBody, "tbody");
-				let records = [];
-				records.push(response);
-				for (let i = 0; i < records.length; i++) {
-					let row = document.createElement("tr");
-					Object.keys(records[i])
-						.filter(propertyName => propertyName !== "_links" && propertyName !== "print")
-						.forEach(propertyName => {
-							let columnCell = document.createElement("td");
-							columnCell.innerText = propertyName;
-							mainTableHeader.appendChild(columnCell);
-
-							let cell = document.createElement("td");
-							cell.innerText = (typeof (records[i][propertyName]) === "object") ? records[i][propertyName].print : records[i][propertyName];
-							row.appendChild(cell);
-						});
-					mainTableBody.appendChild(row);
+	findTemplate(currentValue !== "" && idInputField.className === "correct",//
+		(response) => [response],//
+		`${currentValue}/${idInputField.value}`,//
+		() => { },//
+		() => {
+			if (currentValue === "") {
+				alert("Table was't chosen!");
+			} else if (idInputField.className === "error") {
+				if (idInputField.value !== "") {
+					alert(`Id value must be greater than 0, but is ${idInputField.value}!`);
+				} else {
+					alert("Id field is empty, enter id value!");
 				}
-			})//
-			.execute(`${currentValue}/${idInputField.value}`);
-	} else if (currentValue === "") {
-		alert("Table was't chosen!");
-	} else if (idInputField.className === "error") {
-		if (idInputField.value !== "") {
-			alert(`Id value must be greater than 0, but is ${idInputField.value}!`);
-		} else {
-			alert("Id field is empty, enter id value!");
-		}
-	}
+			}
+		});
 }
 
 
