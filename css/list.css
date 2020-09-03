@@ -56,3 +56,24 @@ p{
 #headerTable{
     width: 100%;
 }
+
+#updateButton {
+	background-color:cornflowerblue;
+	border-radius:28px;
+	border:1px solid dodgerblue;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:'Courier New', Courier, monospace;
+	font-size:12px;
+	padding:5px 5px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #273d66;
+}
+#updateButton:hover {
+	background-color:#2a70bf;
+}
+#updateButton:active {
+	position:relative;
+	top:1px;
+}

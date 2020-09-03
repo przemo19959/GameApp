@@ -59,9 +59,13 @@ let mainTableHeader = document.getElementById("mainTableHeader");
 let mainTableBody = document.getElementById("mainTableBody");
 let mainTable = document.getElementById("mainTable");
 
-mainTable.addEventListener("mouseleave", () => { hideUpdateBoxAndSetOriginalValue(originalValue); });
-function hideUpdateBoxAndSetOriginalValue(originalValue) {
-	let tmp = document.getElementById("updateTable");
+mainTable.addEventListener("mouseleave", () => {
+	hideUpdateBoxAndSetOriginalValue(originalValue,"updateTable");
+	hideUpdateBoxAndSetOriginalValue(originalValue,"updateSelect");
+});
+
+function hideUpdateBoxAndSetOriginalValue(originalValue, idOfUpdatingElement) {
+	let tmp = document.getElementById(idOfUpdatingElement);
 	if (tmp !== null) {
 		tmp.parentNode.innerText = originalValue;
 	}
@@ -113,50 +117,74 @@ function createColumnDataCellInHTMLTable(records, i, propertyName) {
 	dataCell.innerText = (typeof (records[i][propertyName]) === "object") ? records[i][propertyName].print : records[i][propertyName];
 
 	if (propertyName !== "id") { //leave id column - db asigns automatically values, no need to update
-		dataCell.addEventListener("mouseenter", () => {
-			hideUpdateBoxAndSetOriginalValue(originalValue); //must be before new originalValue is set
-			originalValue = dataCell.innerText;
+		if (typeof (records[i][propertyName]) === "object") { //if foreign key, insert select
+			//TODO: uzupełnić funkcję 
+			dataCell.addEventListener("mouseenter", () => {
+				hideUpdateBoxAndSetOriginalValue(originalValue,"updateTable");
+				hideUpdateBoxAndSetOriginalValue(originalValue,"updateSelect");
+				originalValue = dataCell.innerText;
 
-			let miniTable = document.createElement("table");
-			miniTable.id = "updateTable";
-
-			let updateInput = document.createElement("input");
-			updateInput.value = dataCell.innerText;
-			let row1 = document.createElement("tr");
-			row1.appendChild(updateInput);
-			miniTable.appendChild(row1);
-
-
-			let updateButton = document.createElement("button");
-			updateButton.innerText = "Update";
-			updateButton.addEventListener("click", () => {
-				if (updateInput.value !== originalValue) {
-					records[i][propertyName] = updateInput.value;
-
-					console.log(JSON.stringify(records[i]));
-					new HttpRequestTemplate()//
-						.setMethodType("put")//
-						.setRequestBody(JSON.stringify(records[i]))//
-						.setSuccessCallback((response) => {
-							dataCell.innerText = updateInput.value;
-						})//
-						.execute(records[i]._links.self.href);
-				} else {
-					alert("Value is the same, change value to update!");
+				let selectBox = document.createElement("select");
+				selectBox.id="updateSelect";
+				let values = []; //TODO:tutaj pobrać z bazy danych
+				for (let i = 0; i < values.length; i++) {
+					let option = document.createElement("option");
+					option.innerText = values[i];
+					selectBox.appendChild(option);
 				}
+
+				selectBox.addEventListener("change", () => {
+					//TODO:send update request to backend
+					//if successful
+					dataCell.innerText = getSelectedTextFromSelect(selectBox);
+				});
+
+				dataCell.innerText = "";
+				dataCell.appendChild(selectBox);
 			});
-			let undoButton = document.createElement("button");
-			undoButton.innerText = "Undo";
-			undoButton.addEventListener("click", () => { dataCell.innerText = originalValue; });
+		} else {
+			dataCell.addEventListener("mouseenter", () => {
+				hideUpdateBoxAndSetOriginalValue(originalValue,"updateTable"); //must be before new originalValue is set
+				hideUpdateBoxAndSetOriginalValue(originalValue,"updateSelect");
+				originalValue = dataCell.innerText;
 
-			let row2 = document.createElement("tr");
-			row2.appendChild(updateButton);
-			row2.appendChild(undoButton);
-			miniTable.appendChild(row2);
+				let miniTable = document.createElement("table");
+				miniTable.id = "updateTable";
 
-			dataCell.innerText = "";
-			dataCell.appendChild(miniTable);
-		});
+				let updateInput = document.createElement("input");
+				updateInput.value = dataCell.innerText;
+				let row1 = document.createElement("tr");
+				row1.appendChild(updateInput);
+				miniTable.appendChild(row1);
+
+
+				let updateButton = document.createElement("button");
+				updateButton.id = "updateButton";
+				updateButton.innerText = "Update";
+				updateButton.addEventListener("click", () => {
+					if (updateInput.value !== originalValue) {
+						records[i][propertyName] = updateInput.value;
+
+						console.log(JSON.stringify(records[i]));
+						new HttpRequestTemplate()//
+							.setMethodType("put")//
+							.setRequestBody(JSON.stringify(records[i]))//
+							.setSuccessCallback((response) => {
+								dataCell.innerText = updateInput.value;
+							})//
+							.execute(records[i]._links.self.href);
+					} else {
+						alert("Value is the same, change value to update!");
+					}
+				});
+
+				row1.appendChild(updateButton);
+
+				dataCell.innerText = "";
+				dataCell.appendChild(miniTable);
+
+			});
+		}
 	}
 	return dataCell;
 }
