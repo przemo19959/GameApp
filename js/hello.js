@@ -8,6 +8,8 @@ const HTTP_OK_CODE = 200;
 const HTTP_CREATED_CODE = 201;
 const HTTP_NOT_FOUND = 404;
 
+const dateFormatPattern="([12]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))";
+
 function processContent(obj) {
 	return toString(obj);
 }
@@ -60,8 +62,8 @@ let mainTableBody = document.getElementById("mainTableBody");
 let mainTable = document.getElementById("mainTable");
 
 mainTable.addEventListener("mouseleave", () => {
-	hideUpdateBoxAndSetOriginalValue(originalValue,"updateTable");
-	hideUpdateBoxAndSetOriginalValue(originalValue,"updateSelect");
+	hideUpdateBoxAndSetOriginalValue(originalValue, "updateTable");
+	hideUpdateBoxAndSetOriginalValue(originalValue, "updateSelect");
 });
 
 function hideUpdateBoxAndSetOriginalValue(originalValue, idOfUpdatingElement) {
@@ -120,12 +122,13 @@ function createColumnDataCellInHTMLTable(records, i, propertyName) {
 		if (typeof (records[i][propertyName]) === "object") { //if foreign key, insert select
 			//TODO: uzupełnić funkcję 
 			dataCell.addEventListener("mouseenter", () => {
-				hideUpdateBoxAndSetOriginalValue(originalValue,"updateTable");
-				hideUpdateBoxAndSetOriginalValue(originalValue,"updateSelect");
+				hideUpdateBoxAndSetOriginalValue(originalValue, "updateTable");
+				hideUpdateBoxAndSetOriginalValue(originalValue, "updateSelect");
 				originalValue = dataCell.innerText;
 
 				let selectBox = document.createElement("select");
-				selectBox.id="updateSelect";
+				selectBox.id = "updateSelect";
+				console.log(records[i][propertyName]);
 				let values = []; //TODO:tutaj pobrać z bazy danych
 				for (let i = 0; i < values.length; i++) {
 					let option = document.createElement("option");
@@ -144,14 +147,18 @@ function createColumnDataCellInHTMLTable(records, i, propertyName) {
 			});
 		} else {
 			dataCell.addEventListener("mouseenter", () => {
-				hideUpdateBoxAndSetOriginalValue(originalValue,"updateTable"); //must be before new originalValue is set
-				hideUpdateBoxAndSetOriginalValue(originalValue,"updateSelect");
+				hideUpdateBoxAndSetOriginalValue(originalValue, "updateTable"); //must be before new originalValue is set
+				hideUpdateBoxAndSetOriginalValue(originalValue, "updateSelect");
 				originalValue = dataCell.innerText;
 
 				let miniTable = document.createElement("table");
 				miniTable.id = "updateTable";
 
 				let updateInput = document.createElement("input");
+				if (dataCell.innerText.match(dateFormatPattern) !== null) {
+					console.log("cos");
+					updateInput.setAttribute("type", "date");
+				}
 				updateInput.value = dataCell.innerText;
 				let row1 = document.createElement("tr");
 				row1.appendChild(updateInput);

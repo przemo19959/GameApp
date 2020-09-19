@@ -77,3 +77,5 @@ p{
 	position:relative;
 	top:1px;
 }
+
+td { word-wrap: break-word; }
