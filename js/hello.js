@@ -33,11 +33,22 @@ function getSelectedTextFromSelect(selectElement) {
 	return selectElement.options[selectElement.selectedIndex].innerText;
 }
 
-function selectTextInSelect(selectElement, value) {
+function selectTextInSelectWithText(selectElement, innerText) {
 	if ((selectElement instanceof HTMLSelectElement) === false)
 		throw new Error("Passed argument is not <select/> element");
 	for (let i = 0; i < selectElement.options.length; i++) {
-		if (selectElement.options[i].innerText === value) {
+		if (selectElement.options[i].innerText === innerText) {
+			selectElement.selectedIndex = i;
+			break;
+		}
+	}
+}
+
+function selectTextInSelectWithValue(selectElement, value) {
+	if ((selectElement instanceof HTMLSelectElement) === false)
+		throw new Error("Passed argument is not <select/> element");
+	for (let i = 0; i < selectElement.options.length; i++) {
+		if (selectElement.options[i].value === value) {
 			selectElement.selectedIndex = i;
 			break;
 		}
@@ -79,9 +90,15 @@ function findAll() {
 	let currentValue = getSelectedValueFromSelect(tableCBox);
 	let selectedTableName = getSelectedTextFromSelect(tableCBox);
 	findTemplate(currentValue !== "",
-		(response) => response._embedded[selectedTableName],
+		(response) => {
+			if (response.hasOwnProperty("_embedded"))
+				return response._embedded[selectedTableName];
+			return [];
+		},
 		currentValue,
-		() => alert(`Table ${selectedTableName} is empty!`));
+		() => {
+			alert(`Table ${selectedTableName} is empty!`);
+		});
 }
 
 const propertyNamesToIgnore = ["_links", "self", "all", "print"];
@@ -95,17 +112,17 @@ function findTemplate(initialTest, extractRecordsFromResponse, requestURL, noRec
 				if (records.length > 0) { //
 					mainTableHeader = clearNode(mainTableHeader, "thead");
 					mainTableBody = clearNode(mainTableBody, "tbody");
-					for (let i = 0; i < records.length; i++) {
+					records.forEach((record, i) => {
 						let row = document.createElement("tr");
-						Object.keys(records[i])
+						Object.keys(record)
 							.filter(propertyName => propertyNamesToIgnore.indexOf(propertyName) === -1) //if doesn't contain
 							.forEach(propertyName => {
 								if (i == 0)
 									mainTableHeader.appendChild(createColumnNameCellInHTMLTable(propertyName));
-								row.appendChild(createColumnDataCellInHTMLTable(records, i, propertyName));
+								row.appendChild(createColumnDataCellInHTMLTable(record, propertyName));
 							});
 						mainTableBody.appendChild(row);
-					}
+					});
 				} else {
 					noRecordsCallback();
 				}
@@ -123,50 +140,73 @@ function ifPropertyOtherThanId(propertyName, dataCell, onMouseEnter) {
 			originalValue = dataCell.innerText;
 			onMouseEnter();
 		});
-
 		onTableCellLeave(dataCell);
 	}
 	return dataCell;
 }
 
 let originalValue;
-function createColumnDataCellInHTMLTable(records, i, propertyName) {
+function createColumnDataCellInHTMLTable(record, propertyName) {
 	let dataCell = document.createElement("td");
-	if (records[i]._links.hasOwnProperty(propertyName)) { //if foreign key property
-		new HttpRequestTemplate(records[i]._links[propertyName].href)//
-			.setAsync(false)
-			.setSuccessCallback((response) => {
-				dataCell.innerText = response.print;
-				dataCell = ifPropertyOtherThanId(propertyName, dataCell, () => {
-					let values = [];
-					let selectBox = document.createElement("select");
+	if (record._links.hasOwnProperty(propertyName)) { //if foreign key property
+		let requestURL = record._links[propertyName].href;
+		if (requestURL.match(/\/\d+$/) !== null) {
+			dataCell.innerText = record[propertyName].print;
+			dataCell = ifPropertyOtherThanId(propertyName, dataCell, () => {
+				let values = [];
+				let selectBox = document.createElement("select");
+				//TODO: dokończyć, gdy wszystkie pola z wiersza z fill me znikną, powinna pojawić się możliwość zapisu rekordu (w tym momencie istnieje aktualizacja, co nie działa poprawnie)
+				requestURL = requestURL.replace(/\/\d+$/, "");
+				let pluralPropertyName = getPluralPropertyName(requestURL);
+				new HttpRequestTemplate(requestURL)
+					.setAsync(false)
+					.setSuccessCallback((response) => {
+						values = response._embedded[pluralPropertyName];
+						values.forEach(value => selectBox.appendChild(createOption(value.print, value)));
 
-					new HttpRequestTemplate(records[i]._links[propertyName].href)
-						.setAsync(false)
-						.setSuccessCallback((response) => {
-							let pluralPropertyName = getPluralPropertyName(response._links.all.href);
-							new HttpRequestTemplate(response._links.all.href)
-								.setAsync(false)
-								.setSuccessCallback((response) => {
-									values = response._embedded[pluralPropertyName];
-									values.forEach(value => selectBox.appendChild(createOption(value.print, value)));
+						dataCell.innerText = "";
+						dataCell.appendChild(selectBox);
+						selectTextInSelectWithText(selectBox, originalValue);
+					}).execute();
+				selectBox = createUpdateSelectBox(selectBox, record, propertyName, dataCell, values); //must be here, otherwise values array is empty
+			});
+		}
+		//  else {
+		// 	new HttpRequestTemplate(requestURL)//
+		// 		.setAsync(false)
+		// 		.setSuccessCallback((response) => {
+		// 			dataCell.innerText = response.print;
+		// 			dataCell = ifPropertyOtherThanId(propertyName, dataCell, () => {
+		// 				let values = [];
+		// 				let selectBox = document.createElement("select");
 
-									dataCell.innerText = "";
-									dataCell.appendChild(selectBox);
-									selectTextInSelect(selectBox, originalValue);
-								}).execute();
-						}).execute();
-					selectBox = createUpdateSelectBox(selectBox, records[i], propertyName, dataCell, values); //must be here, otherwise values array is empty
-				});
-			}).execute();
+		// 				new HttpRequestTemplate(requestURL)
+		// 					.setAsync(false)
+		// 					.setSuccessCallback((response) => {
+		// 						let pluralPropertyName = getPluralPropertyName(response._links.all.href);
+		// 						new HttpRequestTemplate(response._links.all.href)
+		// 							.setAsync(false)
+		// 							.setSuccessCallback((response) => {
+		// 								values = response._embedded[pluralPropertyName];
+		// 								values.forEach(value => selectBox.appendChild(createOption(value.print, value)));
+
+		// 								dataCell.innerText = "";
+		// 								dataCell.appendChild(selectBox);
+		// 								selectTextInSelectWithText(selectBox, originalValue);
+		// 							}).execute();
+		// 					}).execute();
+		// 				selectBox = createUpdateSelectBox(selectBox, record, propertyName, dataCell, values); //must be here, otherwise values array is empty
+		// 			});
+		// 		}).execute();
+		// }
 	} else {
-		dataCell.innerText = records[i][propertyName];
+		dataCell.innerText = record[propertyName];
 		dataCell = ifPropertyOtherThanId(propertyName, dataCell, () => {
 			let miniTable = document.createElement("table");
 			miniTable.id = "updateTable";
 			let updateInput = createUpdateInput(dataCell);
 			let row1 = document.createElement("tr");
-			let updateButton = createUpdateButton(updateInput, originalValue, records[i], propertyName, dataCell);
+			let updateButton = createUpdateButton(updateInput, originalValue, record, propertyName, dataCell);
 
 			dataCell.innerText = "";
 
@@ -213,7 +253,7 @@ function createUpdateButton(updateInput, originalValue, record, propertyName, da
 				.setRequestBody(JSON.stringify(record))//
 				.setSuccessCallback((response) => {
 					dataCell.innerText = updateInput.value;
-					//TODO:add aynchro notification
+					//TODO:add asynchro notification
 				})//
 				.execute();
 		} else {
@@ -258,6 +298,30 @@ function findById() {
 				}
 			}
 		});
+}
+
+function addEmptyRecord() {
+	if (getSelectedValueFromSelect(tableCBox) === "") {
+		alert("Select table to add new record!");
+	} else if (mainTableBody.childNodes.length > 0 && mainTableBody.lastChild.firstChild.innerText === "*") {
+		alert("There is already one empty row, first fill that row and save one!");
+	} else {
+		new HttpRequestTemplate(getSelectedValueFromSelect(tableCBox))
+			.setSuccessCallback((response) => {
+				new HttpRequestTemplate(response._links.example.href)
+					.setSuccessCallback((response) => {
+						let row = document.createElement("tr");
+						Object.keys(response)
+							.filter(propertyName => propertyNamesToIgnore.indexOf(propertyName) === -1) //if doesn't contain
+							.forEach((propertyName, i, propertyNames) => {
+								if (mainTableHeader.childNodes.length < propertyNames.length)
+									mainTableHeader.appendChild(createColumnNameCellInHTMLTable(propertyName));
+								row.appendChild(createColumnDataCellInHTMLTable(response, propertyName));
+							});
+						mainTableBody.appendChild(row);
+					}).execute();
+			}).execute();
+	}
 }
 
 //C-Create-save
