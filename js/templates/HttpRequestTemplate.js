@@ -1,24 +1,27 @@
 class HttpRequestTemplate {
-    constructor() {
+    constructor(requestURL) {
         //default template values
+        this.requestURL = requestURL;
         this.methodType = "get";
+        this.async = true;
         this.requestBody = "";
-        this.successCallback = printErrorFromServer;
-        this.setErrorCallback(function (error) {
+        this.successCallback = (response) => console.log(response);
+        this.setErrorCallback((error) => {
             showLoader(false);
             printErrorFromServer(error);
         });
     }
 
     setMethodType(methodType) { this.methodType = methodType; return this; }
+    setAsync(async) { this.async = async; return this; }
     setRequestBody(requestBody) { this.requestBody = requestBody; return this; }
     setSuccessCallback(successCallback) { this.successCallback = successCallback; return this; }
     setErrorCallback(errorCallback) { this.errorCallback = errorCallback; return this; }
 
-    execute(requestURL) {
+    execute() {
         let xhr = new XMLHttpRequest();
-        xhr.open(this.methodType, requestURL, true);
-        xhr.setRequestHeader("content-type","application/json");
+        xhr.open(this.methodType, this.requestURL, this.async);
+        xhr.setRequestHeader("content-type", "application/json");
         xhr.onreadystatechange = () => {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 let status = xhr.status;
