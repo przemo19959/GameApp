@@ -8,6 +8,7 @@ const HTTP_OK_CODE = 200;
 const HTTP_CREATED_CODE = 201;
 const HTTP_NOT_FOUND = 404;
 
+const defaultExampleValue = "*";
 const dateFormatPattern = "([12]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))";
 
 let virtualTab;
@@ -69,12 +70,14 @@ let mainTable = document.getElementById("mainTable");
 mainTable.addEventListener("mouseleave", () => {
 	hideUpdateBoxAndSetOriginalValue(originalValue, "updateTable");
 	hideUpdateBoxAndSetOriginalValue(originalValue, "updateSelect");
+	hideUpdateBoxAndSetOriginalValue(originalValue, "saveSelect");
 });
 
 function onTableCellLeave(cell) {
 	cell.addEventListener("mouseleave", () => {
 		hideUpdateBoxAndSetOriginalValue(originalValue, "updateTable");
 		hideUpdateBoxAndSetOriginalValue(originalValue, "updateSelect");
+		hideUpdateBoxAndSetOriginalValue(originalValue, "saveSelect");
 	});
 }
 
@@ -97,6 +100,8 @@ function findAll() {
 		},
 		currentValue,
 		() => {
+			mainTableHeader = clearNode(mainTableHeader, "thead");
+			mainTableBody = clearNode(mainTableBody, "tbody");
 			alert(`Table ${selectedTableName} is empty!`);
 		});
 }
@@ -119,7 +124,7 @@ function findTemplate(initialTest, extractRecordsFromResponse, requestURL, noRec
 							.forEach(propertyName => {
 								if (i == 0)
 									mainTableHeader.appendChild(createColumnNameCellInHTMLTable(propertyName));
-								row.appendChild(createColumnDataCellInHTMLTable(record, propertyName));
+								row.appendChild(createColumnDataCellInHTMLTable(record, propertyName, false));
 							});
 						mainTableBody.appendChild(row);
 					});
@@ -137,6 +142,7 @@ function ifPropertyOtherThanId(propertyName, dataCell, onMouseEnter) {
 		dataCell.addEventListener("mouseenter", () => {
 			hideUpdateBoxAndSetOriginalValue(originalValue, "updateTable"); //must be before new originalValue is set
 			hideUpdateBoxAndSetOriginalValue(originalValue, "updateSelect");
+			hideUpdateBoxAndSetOriginalValue(originalValue, "saveSelect");
 			originalValue = dataCell.innerText;
 			onMouseEnter();
 		});
@@ -146,7 +152,7 @@ function ifPropertyOtherThanId(propertyName, dataCell, onMouseEnter) {
 }
 
 let originalValue;
-function createColumnDataCellInHTMLTable(record, propertyName) {
+function createColumnDataCellInHTMLTable(record, propertyName, save) {
 	let dataCell = document.createElement("td");
 	if (record._links.hasOwnProperty(propertyName)) { //if foreign key property
 		let requestURL = record._links[propertyName].href;
@@ -168,7 +174,9 @@ function createColumnDataCellInHTMLTable(record, propertyName) {
 						dataCell.appendChild(selectBox);
 						selectTextInSelectWithText(selectBox, originalValue);
 					}).execute();
-				selectBox = createUpdateSelectBox(selectBox, record, propertyName, dataCell, values); //must be here, otherwise values array is empty
+
+				selectBox = save ? createSaveSelectBox(selectBox, record, propertyName, dataCell, values) : createUpdateSelectBox(selectBox, record, propertyName, dataCell, values);
+				// selectBox = createUpdateSelectBox(selectBox, record, propertyName, dataCell, values); //must be here, otherwise values array is empty
 			});
 		}
 		//  else {
@@ -204,14 +212,14 @@ function createColumnDataCellInHTMLTable(record, propertyName) {
 		dataCell = ifPropertyOtherThanId(propertyName, dataCell, () => {
 			let miniTable = document.createElement("table");
 			miniTable.id = "updateTable";
-			let updateInput = createUpdateInput(dataCell);
+			let inputNode = createInput(dataCell);
 			let row1 = document.createElement("tr");
-			let updateButton = createUpdateButton(updateInput, originalValue, record, propertyName, dataCell);
+			let buttonNode = createButton(inputNode, originalValue, record, propertyName, dataCell, save);
 
 			dataCell.innerText = "";
 
-			row1.appendChild(updateInput);
-			row1.appendChild(updateButton);
+			row1.appendChild(inputNode);
+			row1.appendChild(buttonNode);
 			miniTable.appendChild(row1);
 			dataCell.appendChild(miniTable);
 		});
@@ -223,7 +231,6 @@ function createUpdateSelectBox(selectBox, record, propertyName, dataCell, values
 	selectBox.id = "updateSelect";
 	selectBox.addEventListener("change", () => {
 		record[propertyName] = values[selectBox.selectedIndex];
-		console.log(record);
 		new HttpRequestTemplate(record._links.self.href)//
 			.setMethodType("put")//
 			.setRequestBody(JSON.stringify(record))//
@@ -236,34 +243,87 @@ function createUpdateSelectBox(selectBox, record, propertyName, dataCell, values
 	return selectBox;
 }
 
+function createSaveSelectBox(selectBox, record, propertyName, dataCell, values) {
+	selectBox.id = "saveSelect";
+	selectBox.addEventListener("change", () => {
+		record[propertyName] = values[selectBox.selectedIndex];
+		dataCell.innerText = getSelectedTextFromSelect(selectBox);
+		if (isEmptyRecordFilledWithValues()) {
+			new HttpRequestTemplate(record._links.self.href.replace(/\/\d+$/, ""))
+				.setMethodType("post")
+				.setRequestBody(JSON.stringify(record))
+				.setSuccessCallback((response) => {
+					findAll(); //reload
+				}).execute();
+		}
+	});
+	return selectBox;
+}
+
+function isEmptyRecordFilledWithValues() {
+	for (let cell of mainTableBody.lastChild.childNodes) {
+		console.log(cell.innerText);
+		if (cell.innerText.startsWith(defaultExampleValue))
+			return false;
+	}
+	return true;
+}
+
 function getPluralPropertyName(allRequestURL) {
 	return allRequestURL.substring(allRequestURL.lastIndexOf("/") + 1);
 }
 
-function createUpdateButton(updateInput, originalValue, record, propertyName, dataCell) {
-	let updateButton = document.createElement("button");
-	updateButton.id = "updateButton";
-	updateButton.innerText = "Update";
-	updateButton.addEventListener("click", () => {
-		if (updateInput.value !== originalValue) {
-			record[propertyName] = updateInput.value;
-
-			new HttpRequestTemplate(record._links.self.href)//
-				.setMethodType("put")//
-				.setRequestBody(JSON.stringify(record))//
-				.setSuccessCallback((response) => {
-					dataCell.innerText = updateInput.value;
-					//TODO:add asynchro notification
-				})//
-				.execute();
+function createButton(inputNode, originalValue, record, propertyName, dataCell, save) {
+	let buttonNode = document.createElement("button");
+	buttonNode.id = save ? "saveButton" : "updateButton";
+	buttonNode.innerText = save ? "Save" : "Update";
+	buttonNode.addEventListener("click", () => {
+		if (inputNode.value !== originalValue) {
+			record[propertyName] = inputNode.value;
+			if (save) {
+				dataCell.innerText = buttonNode.value;
+				if (isEmptyRecordFilledWithValues()) {
+					new HttpRequestTemplate(record._links.self.href.replace(/\/\d+$/, "")).setMethodType("post").setRequestBody(JSON.stringify(record))
+						.setSuccessCallback((response) => { findAll(); /*reload*/ })
+						.execute();
+				}
+			} else {
+				new HttpRequestTemplate(record._links.self.href).setMethodType("put").setRequestBody(JSON.stringify(record))//
+					.setSuccessCallback((response) => { dataCell.innerText = inputNode.value;/*TODO:add asynchro notification*/ })//
+					.execute();
+			}
 		} else {
 			alert("Value is the same, change value to update!");
 		}
 	});
-	return updateButton;
+	return buttonNode;
 }
 
-function createUpdateInput(dataCell) {
+// function createSaveButton(saveInput, originalValue, record, propertyName, dataCell) {
+// 	let saveButton = document.createElement("button");
+// 	saveButton.id = "saveButton";
+// 	saveButton.innerText = "Save";
+// 	saveButton.addEventListener("click", () => {
+// 		if (saveInput.value !== originalValue) {
+// 			record[propertyName] = saveInput.value;
+
+// 			dataCell.innerText = saveInput.value;
+// 			if (isEmptyRecordFilledWithValues()) {
+// 				new HttpRequestTemplate(record._links.self.href.replace(/\/\d+$/, ""))
+// 					.setMethodType("post")
+// 					.setRequestBody(JSON.stringify(record))
+// 					.setSuccessCallback((response) => {
+// 						findAll(); //reload
+// 					}).execute();
+// 			}
+// 		} else {
+// 			alert("Value is the same, change value to update!");
+// 		}
+// 	});
+// 	return saveButton;
+// }
+
+function createInput(dataCell) {
 	let updateInput = document.createElement("input");
 	if (dataCell.innerText.match(dateFormatPattern) !== null) {
 		updateInput.setAttribute("type", "date");
@@ -316,7 +376,7 @@ function addEmptyRecord() {
 							.forEach((propertyName, i, propertyNames) => {
 								if (mainTableHeader.childNodes.length < propertyNames.length)
 									mainTableHeader.appendChild(createColumnNameCellInHTMLTable(propertyName));
-								row.appendChild(createColumnDataCellInHTMLTable(response, propertyName));
+								row.appendChild(createColumnDataCellInHTMLTable(response, propertyName, true));
 							});
 						mainTableBody.appendChild(row);
 					}).execute();

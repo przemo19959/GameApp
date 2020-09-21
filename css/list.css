@@ -80,3 +80,26 @@ p{
 	position:relative;
 	top:1px;
 }
+
+#saveButton {
+	background-color:green;
+	border-radius:28px;
+	border:1px solid chartreuse;
+	display:inline-block;
+	cursor:pointer;
+	color:#ffffff;
+	font-family:'Courier New', Courier, monospace;
+	font-size:12px;
+	padding:5px 5px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px darkgreen;
+}
+
+#saveButton:hover {
+	background-color:darkgreen;
+}
+
+#saveButton:active {
+	position:relative;
+	top:1px;
+}
