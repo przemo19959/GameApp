@@ -4,13 +4,6 @@ const mainURL = "http://localhost:8080/springDBProject/mainPage/";
 const ENTER_KEYCODE = 13;
 const ESC_KEYCODE = 27;
 
-//TODO: zrobić coś z tymi stałymi
-const HTTP_OK_CODE = 200;
-const HTTP_CREATED_CODE = 201;
-const HTTP_NOT_FOUND = 404;
-
-//TODO: pobierać z api restowego, zamiast na sztywno
-const DEFAULT_EXAMPLE_VALUE = "*";
 const DATE_FORMAT_PATTERN = "([12]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))";
 const ENDING_NUMBER_PATTERN = /\/\d+$/;
 

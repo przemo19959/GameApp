@@ -1,9 +1,13 @@
 "use strict";
 const rootURL = "http://localhost:8080";
+let DEFAULT_EXAMPLE_VALUE;
 
 function loadRootPage() {
     new HttpRequestTemplate(rootURL)
-        .setSuccessCallback((response) => initTableCBox(response))
+        .setSuccessCallback((response) => {
+            initTableCBox(response);
+            DEFAULT_EXAMPLE_VALUE=response.defaultExampleValue;
+        })
         .setErrorCallback((error) => console.log(error))
         .execute();
 }
