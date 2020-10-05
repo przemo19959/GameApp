@@ -42,66 +42,31 @@
                     onchange="idFieldChanged()" title="Type id of record which you want to show or delete.">
             </td>
             <td><button title="Click to find record with given id." onclick="findById()">findById</button></td>
-            <!-- <td>
-                <button ng-click="deleteById()" title="Click to delete record with given id.">deleteById</button>
-            </td> -->
             <td>
                 <button title="Click to add new record empty row." onclick="addEmptyRecord()">addRecord</button>
             </td>
+            <td>
+                <button id="undoSaveButton" title="Click to undo saving new record." onclick="undoSaving()">Undo Saving</button>
+            </td>
+            <!-- <td>
+                <button ng-click="deleteById()" title="Click to delete record with given id.">deleteById</button>
+            </td> -->
         </tr>
     </table>
+
+    <div id="noRecordsWarning" style="display: none; width: 600px;">
+        <p><img style="float: left;" src="css/img/warning-icon.png" height="18px" width="18px"></p>
+        <p>No records in parent table, first add records to parent then save/update child table!</p>
+    </div>
+    <!-- More messages -->
 
     <table id="mainTable">
         <thead id="mainTableHeader"></thead>
         <tbody id="mainTableBody"></tbody>
-        <!-- <tr ng-repeat="record in virtualTab.records">
-            <td ng-repeat="column in virtualTab.columns">
-                <p ng-model="paragraphValue" ng-click="virtualTab.setTableValue(record,column,true)"
-                    ng-if="virtualTab.getTableValue(record,column)==false">
-                    {{processContent(record[column])}}</p>
-                <table ng-if="virtualTab.getTableValue(record,column)">
-                    <tr>
-                        <td colspan="2">
-                            <input type="{{virtualTab.getInputType(column)}}" ng-model="updateInputValue.value"
-                                ng-if="virtualTab.isEditedNormalColumn(record,column)" value="updateInputValue.value">
-                            <select ng-model="updateInputValue.value"
-                                ng-if="virtualTab.idEditedForeignColumn(record,column)"
-                                ng-options="processContent(foreignRecord) for foreignRecord in virtualTab.getForeignColumnRecords(column)">
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><button ng-click="undoUpdate()" title="Click to undo update operation.">Undo</button></td>
-                        <td><button ng-click="update()" title="Click to update record with new value.">Update</button>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr> -->
-
-        <!-- <tr ng-if="virtualTab.isNewRecordAdded()">
-            <td ng-repeat="column in virtualTab.columns">
-                <p ng-if="virtualTab.isIdColumn(column)">*</p>
-                <input ng-model="recordSB[column]" class="{{recordSBStyle[$index]}}"
-                    type="{{virtualTab.getInputType(column)}}" ng-if="virtualTab.isNotIdAndForeignColumn(column)"
-                    ng-change="inputChanged($index,column,false)">
-                <select ng-model="recordSB[column]" class="{{recordSBStyle[$index]}}"
-                    ng-if="virtualTab.isNotIdAndNormalColumn(column)"
-                    ng-options="processContent(foreignRecord) for foreignRecord in virtualTab.getForeignColumnRecords(column)"
-                    ng-change="inputChanged($index,column, true)">
-                </select>
-            </td>
-        </tr>
-        <tr ng-if="virtualTab.isNewRecordAdded()">
-            <td colspan="{{virtualTab.columnCount}}">
-                <button ng-click="undoSave()" title="Click to undo save operation.">Undo</button>
-                <button ng-click="save()" title="Click to save new record in database.">Save Record in DB</button>
-            </td>
-        </tr> -->
     </table>
 
-    <script src="js/templates/HttpRequestTemplate.js"></script>
-    <script src='/js/main.js'></script>
+    <script src="/js/templates/HttpRequestTemplate.js"></script>
+    <script src="/js/main.js"></script>
     <script src="/js/VirtualTable.js"></script>
     <script src="/js/hello.js"></script>
 </body>

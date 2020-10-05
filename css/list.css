@@ -46,8 +46,19 @@
     background-repeat: no-repeat;
 }
 
-p{
+.warning{
+    border-bottom: 2px solid orange !important;
+    background-image: url('img/warning-icon.png');
+    background-position: 95%;
+    background-size: 18px;
+    background-repeat: no-repeat;
+}
+
+p{  
+    font-family: Arial, Helvetica, sans-serif;
     margin: 0px;
+    font-weight: bold;
+    font-size: small;
 }
 
 #mainHeader{
@@ -92,7 +103,8 @@ p{
 	font-size:12px;
 	padding:5px 5px;
 	text-decoration:none;
-	text-shadow:0px 1px 0px darkgreen;
+    text-shadow:0px 1px 0px darkgreen;
+    display: none;
 }
 
 #saveButton:hover {
@@ -102,4 +114,8 @@ p{
 #saveButton:active {
 	position:relative;
 	top:1px;
+}
+
+#undoSaveButton{
+    display: none; 
 }

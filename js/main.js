@@ -4,7 +4,7 @@ const rootURL = "http://localhost:8080";
 function loadRootPage() {
     new HttpRequestTemplate(rootURL)
         .setSuccessCallback((response) => initTableCBox(response))
-        .setErrorCallback(() => console.log("error"))
+        .setErrorCallback((error) => console.log(error))
         .execute();
 }
 
