@@ -119,7 +119,7 @@ function onTableCellMouseLeave(cell) {
 //R-Receive-findAll
 function findAll() {
 	undoSaveButton.style.display = "none"; //important, if user forgets to undo saving before changing table
-	noRecordsWarning.style.display="none"; //important, so that warning hides when user changes table
+	noRecordsWarning.style.display = "none"; //important, so that warning hides when user changes table
 	let selectedTableHref = getSelectedValueFromSelect(tableCBox);
 	let selectedTableName = getSelectedTextFromSelect(tableCBox);
 	findTemplate(selectedTableHref !== "",
@@ -190,7 +190,7 @@ function ifPropertyOtherThanId(propertyName, dataCell, onMouseEnter = () => { })
 }
 
 let originalValue;
-let noRecordsWarning=document.getElementById("noRecordsWarning");
+let noRecordsWarning = document.getElementById("noRecordsWarning");
 /**
  * @param {object} record - current analyzed record
  * @param {string} propertyName - current analyzed property name of record
@@ -220,9 +220,9 @@ function createColumnDataCellInHTMLTable(record, propertyName, save) {
 							dataCell.innerText = "";
 							dataCell.appendChild(selectBox);
 							selectOptionInSelectWithText(selectBox, originalValue);
-						}else{
-							dataCell.className="warning";
-							noRecordsWarning.style.display="block";
+						} else {
+							dataCell.className = "warning";
+							noRecordsWarning.style.display = "block";
 						}
 					}).execute();
 
@@ -332,7 +332,6 @@ function createInputNode(dataCell, record, propertyName, save) {
 	let inputNode = document.createElement("input");
 	if (dataCell.innerText.match(DATE_FORMAT_PATTERN) !== null) {
 		inputNode.setAttribute("type", "date");
-		//TODO:poprawić, bo data jest źle odzczytywana (raczej coś z tym, że data jest liczona od 0 w języku)
 	}
 	inputNode.value = dataCell.innerText;
 	if (save) {
@@ -427,26 +426,23 @@ function undoSaving() {
 	undoSaveButton.style.display = "none";
 }
 
-//D-Delete-deleteById
 function deleteById() {
-	if (tableCBox != tables[0] && idInputStyle == "correct") {
-		showLoader(true);
-		httpRequestTemplate("delete", mainURL + tableCBox.value + "/" + id, "",
-			function (response) {
-				if (response.status == HTTP_OK_CODE) {
-					showLoader(false);
-					findAll();
-					printResponseFromServer(response);
-				}
-			},
-			function (error) {
-				showLoader(false);
-				printErrorFromServer(error);
-			});
-	} else if (tableCBox == tables[0]) {
-		alert("Table was't chosen!");
-	} else if (id < 1 || id == undefined) {
-		alert("Id value must be greater than 0, but is " + id + "!");
+	let selectedTableHref = getSelectedValueFromSelect(tableCBox);
+	if (selectedTableHref === "") {
+		alert("Table wasn't chosen");
+	} else if (idInputField.className !== "correct") {
+		if (idInputField.value !== "") {
+			alert(`Id value must be greater than 0, but is ${idInputField.value}!`);
+		} else {
+			alert("Id field is empty, enter id value!");
+		}
+	} else {
+		new HttpRequestTemplate(`${selectedTableHref}/${idInputField.value}`)
+			.setMethodType("delete")
+			.setSuccessCallback((response) => {
+				findAll(); /*reload*/
+				alert("Successful delete");
+			}).execute();
 	}
 }
 
