@@ -125,7 +125,7 @@ function findAll() {
 		() => {
 			mainTableHeader = clearElement(mainTableHeader, "thead");
 			mainTableBody = clearElement(mainTableBody, "tbody");
-			alert(`Table ${selectedTableName} is empty!`);
+			log(`Table ${selectedTableName} is empty!`, "notify");
 		});
 }
 
@@ -263,7 +263,7 @@ function createSelectBoxNode(selectBox, record, propertyName, dataCell, values, 
 				.setRequestBody(JSON.stringify(record))//
 				.setSuccessCallback((response) => {
 					dataCell.innerText = getSelectedTextFromSelect(selectBox);
-					//TODO: add notification
+					log("Field updated!", "success");
 				})//
 				.execute();
 		}
@@ -306,10 +306,13 @@ function createUpdateButton(inputNode, originalValue, record, propertyName, data
 		if (inputNode.value !== originalValue) {
 			record[propertyName] = inputNode.value;
 			new HttpRequestTemplate(record._links.self.href).setMethodType("put").setRequestBody(JSON.stringify(record))//
-				.setSuccessCallback((response) => { dataCell.innerText = inputNode.value;/*TODO:add asynchro notification*/ })//
+				.setSuccessCallback((response) => {
+					dataCell.innerText = inputNode.value;
+					log("Field updated!", "success");
+				})//
 				.execute();
 		} else {
-			alert("Value is the same, change value to update!");
+			log("Value is the same, change value to update!", "warning");
 		}
 	});
 	return buttonNode;
@@ -357,12 +360,12 @@ function findById() {
 		() => { },//
 		() => {
 			if (selectedTableHref === "") {
-				alert("Table was't chosen!");
+				log("Table is not chosen!", "warning");
 			} else if (idInputField.className === "error") {
 				if (idInputField.value !== "") {
-					alert(`Id value must be greater than 0, but is ${idInputField.value}!`);
+					log(`Id value must be greater than 0, but is ${idInputField.value}!`, "warning");
 				} else {
-					alert("Id field is empty, enter id value!");
+					log("Id field is empty, enter id value!", "warning");
 				}
 			}
 		});
@@ -374,9 +377,9 @@ let saveButton;
 let undoSaveButton = document.getElementById("undoSaveButton");
 function addEmptyRecord() {
 	if (getSelectedValueFromSelect(tableCBox) === "") {
-		alert("Select table to add new record!");
+		log("Select table to add new record!", "warning");
 	} else if (mainTableBody.childNodes.length > 1 && mainTableBody.lastChild.previousSibling.firstChild.innerText === "0") {
-		alert("There is already one empty row, first fill that row and save one!");
+		log("There is already one empty row, first fill that row and save one!", "warning");
 	} else {
 		new HttpRequestTemplate(getSelectedValueFromSelect(tableCBox))
 			.setSuccessCallback((response) => {
@@ -399,7 +402,10 @@ function addEmptyRecord() {
 						saveButton.addEventListener("click", () => {
 							undoSaveButton.style.display = "none";
 							new HttpRequestTemplate(response._links.self.href.replace(/\/\d+$/, "")).setMethodType("post").setRequestBody(JSON.stringify(response))
-								.setSuccessCallback((response) => { findAll(); /*reload*/ })
+								.setSuccessCallback((response) => {
+									findAll(); //reload
+									log("Successful save!", "success");
+								})
 								.execute();
 						});
 						row2.appendChild(saveButton);
@@ -422,22 +428,39 @@ function undoSaving() {
 function deleteById() {
 	let selectedTableHref = getSelectedValueFromSelect(tableCBox);
 	if (selectedTableHref === "") {
-		alert("Table wasn't chosen");
+		log("Table is not chosen!", "warning");
 	} else if (idInputField.className !== "correct") {
 		if (idInputField.value !== "") {
-			alert(`Id value must be greater than 0, but is ${idInputField.value}!`);
+			log(`Id value must be greater than 0, but is ${idInputField.value}!`, "warning");
 		} else {
-			alert("Id field is empty, enter id value!");
+			log("Id field is empty, enter id value!", "warning");
 		}
 	} else {
 		new HttpRequestTemplate(`${selectedTableHref}/${idInputField.value}`)
 			.setMethodType("delete")
 			.setSuccessCallback((response) => {
 				findAll(); /*reload*/
-				alert("Successful delete");
+				log("Successful delete", "success");
 			}).execute();
 	}
 }
 
-function printErrorFromServer(error) { alert(error.exceptionName + ": " + error.message + "\n\n" + error.solutions.join("\n=>")); }
-function printResponseFromServer(response) { console.log(response); }
+//strategy pattern
+let log = logWithAlertify;
+
+function logWithAlertify(message, messageKind, timeout = 4) {
+	switch (messageKind) {
+		case "success": alertify.success(message, timeout); break;
+		case "notify": alertify.notify(message, timeout); break;
+		case "error": alertify.error(message, timeout); break;
+		case "warning": alertify.error(message, timeout); break;
+		default:
+			new Error(`Message kind: ${messageKind} is unknown!`);
+	}
+}
+
+function logWithAlert(message, messageKind, timeout) {
+	alert(`${messageKind}: ${message}`)
+}
+
+function printErrorFromServer(error) { log(error.exceptionName + ": " + error.message + "\n\n" + error.solutions.join("\n=>"), "error"); }

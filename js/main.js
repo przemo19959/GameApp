@@ -6,9 +6,10 @@ function loadRootPage() {
     new HttpRequestTemplate(rootURL)
         .setSuccessCallback((response) => {
             initTableCBox(response);
-            DEFAULT_EXAMPLE_VALUE=response.defaultExampleValue;
+            DEFAULT_EXAMPLE_VALUE = response.defaultExampleValue;
+            alertify.success("Connected!", 1);
         })
-        .setErrorCallback((error) => console.log(error))
+        .setErrorCallback((error) => alertify.error(error))
         .execute();
 }
 
